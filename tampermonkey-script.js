@@ -71,6 +71,15 @@ class App {
     this.stop = false;
     log('Starting to send a message');
 
+    // Click new chat button if needed
+    const newChatButton = document.querySelector('button[data-testid="create-new-chat-button"]');
+    if (newChatButton) {
+      log('New chat button found, clicking it');
+      newChatButton.click();
+      // Wait for the new chat to initialize
+      await sleep(1000);
+    }
+
     // Update all placeholder elements with the new text
     document.querySelectorAll('p.placeholder').forEach(element => {
       element.textContent = text;
