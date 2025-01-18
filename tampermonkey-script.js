@@ -69,62 +69,23 @@ class App {
 
   async start({ text, model, newChat }) {
     this.stop = false;
-    log('Starting to edit or send a message');
+    log('Starting to send a message');
 
-    // Check for the edit button
-    const editButton = document.querySelector(
-      'button.flex.h-9.w-9.items-center.justify-center.rounded-full.text-token-text-secondary.transition.hover\\:bg-token-main-surface-tertiary'
-    );
-    if (editButton) {
-      log('Edit button found, clicking it');
-      editButton.click();
-      await sleep(500);
+    // Update all placeholder elements with the new text
+    document.querySelectorAll('p.placeholder').forEach(element => {
+      element.textContent = text;
+    });
 
-      // Select all text and replace with the new text
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        log('Textarea found, replacing text');
-        textarea.value = text;
-        textarea.select();
-        const event = new Event('input', { bubbles: true });
-        textarea.dispatchEvent(event);
+    // Wait a moment for the text to be properly set
+    await sleep(1000);
 
-        // Adding a small delay before pressing the send button
-        await sleep(500);
-
-        // Click the send button to send the edited message
-        const sendButton = document.querySelector(
-          'button.btn.relative.btn-primary'
-        );
-        if (sendButton) {
-          log('Send button found, clicking it');
-          sendButton.click();
-        } else {
-          log('Error: Send button not found');
-        }
-      } else {
-        log('Error: Textarea not found');
-      }
+    // Click the send button using the data-testid attribute
+    const sendButton = document.querySelector('[data-testid="send-button"]');
+    if (sendButton) {
+      log('Send button found, clicking it');
+      sendButton.click();
     } else {
-      log('No edit button found, sending a new message');
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.value = text;
-        const event = new Event('input', { bubbles: true });
-        textarea.dispatchEvent(event);
-        await sleep(500);
-        const sendButton = document.querySelector(
-          'button.mb-1.mr-1.flex.h-8.w-8.items-center.justify-center.rounded-full.bg-black.text-white.transition-colors.hover\\:opacity-70.focus-visible\\:outline-none.focus-visible\\:outline-black.disabled\\:bg-\\[\\#D7D7D7\\].disabled\\:text-\\[\\#f4f4f4\\].disabled\\:hover\\:opacity-100.dark\\:bg-white.dark\\:text-black.dark\\:focus-visible\\:outline-white.disabled\\:dark\\:bg-token-text-quaternary.dark\\:disabled\\:text-token-main-surface-secondary'
-        );
-        if (sendButton) {
-          log('Send button found, clicking it');
-          sendButton.click();
-        } else {
-          log('Error: Send button not found');
-        }
-      } else {
-        log('Error: Textarea not found');
-      }
+      log('Error: Send button not found');
     }
 
     this.observeMutations();
@@ -159,14 +120,20 @@ class App {
         return;
       }
 
-      this.lastText = lastText;
+      // Wait for 1 second and get the text again to ensure it's complete
+      await sleep(1000);
+      const finalText = getTextFromNode(
+        last.querySelector('div[data-message-author-role="assistant"]')
+      );
+
+      this.lastText = finalText;
       log('send', {
-        text: lastText,
+        text: finalText,
       });
       this.socket.send(
         JSON.stringify({
           type: 'answer',
-          text: lastText,
+          text: finalText,
         })
       );
 
