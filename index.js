@@ -76,10 +76,24 @@ app.post('/v1/chat/completions', async function (req, res) {
 
   console.log('request body', req.body)
 
+  // Process messages to handle image content
+  const processedMessages = messages.map(msg => {
+    if (Array.isArray(msg.content)) {
+      // Handle both text and image content
+      const textContent = msg.content.find(item => item.type === 'text')?.text || '';
+      const imageContent = msg.content.find(item => item.type === 'image_url')?.image_url?.url || '';
+      if (imageContent) {
+        return `${textContent}\n[Image: ${imageContent}]`;
+      }
+      return textContent;
+    }
+    return msg.content;
+  });
+
   const requestPayload = `
     Now you must play the role of system and answer the user.
 
-    ${JSON.stringify(messages)}
+    ${JSON.stringify(processedMessages, null, 2)}
 
     Your answer:
   `;

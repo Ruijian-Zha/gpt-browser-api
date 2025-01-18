@@ -80,9 +80,54 @@ class App {
       await sleep(1000);
     }
 
-    // Update all placeholder elements with the new text
+    // Handle image upload if present
+    const imageMatch = text.match(/\[Image: (data:image\/[^[\]]+)\]/);
+    if (imageMatch) {
+      log('Found image data in text');
+      const base64Image = imageMatch[1];
+      log('Extracted base64 image data:', base64Image.substring(0, 50) + '...');
+      
+      // Convert base64 to blob
+      log('Converting base64 to blob...');
+      const response = await fetch(base64Image);
+      const blob = await response.blob();
+      log('Blob created:', blob.size, 'bytes,', blob.type);
+      const file = new File([blob], "small.png", { type: "image/png" });
+      log('File created:', file.name, file.size, 'bytes,', file.type);
+
+      // Create DataTransfer and add file
+      log('Creating DataTransfer object...');
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      log('File added to DataTransfer, items:', dataTransfer.items.length);
+
+      // Get file input and set files
+      log('Looking for file input element...');
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) {
+        log('File input found, setting files');
+        fileInput.files = dataTransfer.files;
+        log('Files set, count:', fileInput.files.length);
+      } else {
+        log('Error: File input not found');
+      }
+
+      // Trigger change event
+      log('Triggering change event...');
+      fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      log('Change event triggered');
+
+      // Wait for file upload to complete
+      await this.waitForFileUpload();
+
+      // Update text to remove the image data
+      text = text.replace(/\[Image: data:image\/[^[\]]+\]/, '').trim();
+      log('Image data removed from text, remaining text:', text);
+    }
+
+    // Update text in placeholder elements
     document.querySelectorAll('p.placeholder').forEach(element => {
-      element.textContent = text;
+      element.textContent = text || ' '; // Use space if text is empty
     });
 
     // Wait a moment for the text to be properly set
@@ -98,6 +143,24 @@ class App {
     }
 
     this.observeMutations();
+  }
+
+  async waitForFileUpload() {
+    log('Waiting for file upload to complete...');
+    while (true) {
+      // Check for the upload progress indicator
+      const uploadProgress = document.querySelector('div[role="progressbar"]');
+      // Check for any loading spinners that might indicate upload in progress
+      const loadingSpinner = document.querySelector('.text-token-text-secondary.animate-spin');
+      
+      if (!uploadProgress && !loadingSpinner) {
+        log('File upload completed');
+        break;
+      }
+      await sleep(500);
+    }
+    // Add a small delay to ensure UI is fully updated
+    await sleep(1000);
   }
 
   async observeMutations() {
